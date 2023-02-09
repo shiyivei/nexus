@@ -1,8 +1,29 @@
 [package]
 name = "nexus"
+authors = ["shiyivei"]
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-trait = "0.1.64"
+bitflags = "1.3.2"
+bytes = "1.4.0"
+futures-util = {version ="0.3", default-features = false, features =["alloc"]}
+http = "0.2.8"
+http-body = "0.4.5"
+hyper = "0.14.24"
+pin-project-lite = "0.2.9"
+regex = "1.7.1"
+serde = "1.0.152"
+serde_json = "1.0.93"
+serde_urlencoded = "0.7.1"
+sync_wrapper = "0.1.2"
+tokio = {version = "1" ,features = ["time"]}
+tokio-util = "0.7.4"
+tower = {version ="0.4",default-features = false, features = ["util","buffer","make"]}
+tower-http = {version ="0.1",features = ["add-extension","map-response-body"]}
+tower-layer = "0.3.2"
+tower-service = "0.3.2"
+
