@@ -1,7 +1,7 @@
 [package]
 name = "nexus"
 authors = ["shiyivei"]
-version = "0.1.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -13,7 +13,7 @@ bytes = "1.4.0"
 futures-util = {version ="0.3", default-features = false, features =["alloc"]}
 http = "0.2.8"
 http-body = "0.4.5"
-hyper = "0.14.24"
+hyper = {version = "0.14", default-features = false, features =["server","tcp","http1","stream"]}
 pin-project-lite = "0.2.9"
 regex = "1.7.1"
 serde = "1.0.152"
