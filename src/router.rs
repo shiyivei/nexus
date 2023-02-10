@@ -3,6 +3,7 @@
 // empty and wrong are special cases, using a struct to wrap it up
 
 mod empty_router;
+mod route;
 
 pub struct Router<S> {
     // Service
