@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 
 use super::*;
 
@@ -22,7 +22,7 @@ impl<E> EmptyRouter<E> {
     pub(crate) fn method_not_found() -> Self {
         Self {
             // 405
-            status: StatusCode::METHOD_NOT_FOUND,
+            status: StatusCode::METHOD_NOT_ALLOWED,
             _marker: PhantomData,
         }
     }
@@ -40,7 +40,7 @@ impl<E> Clone for EmptyRouter<E> {
 
 // debug
 impl<E> Debug for EmptyRouter<E> {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("EmptyRouter").finish()
     }
 }
@@ -63,8 +63,8 @@ where
     #[inline]
     fn call(&mut self, mut request: Request<B>) -> Self::Future {
         // 405
-        if self.status = StatusCode::METHOD_NOT_FOUND {
-            request.extensions_mut().insert(NoMethodMatch)
+        if self.status == StatusCode::METHOD_NOT_ALLOWED {
+            request.extensions_mut().insert(NoMethodMatch);
         }
 
         // change to 405
@@ -78,7 +78,7 @@ where
         // create an empty body
         let mut res = Response::new(crate::body::empty());
         // insert request
-        res.extensions().insert(FromEmptyRouter { request });
+        res.extensions_mut().insert(FromEmptyRouter { request });
         // change status
         *res.status_mut() = self.status;
 

@@ -1,4 +1,8 @@
-use http_body::Body;
+pub use bytes::Bytes;
+pub use http_body::{Body as HttpBody, Empty, Full};
+pub use hyper::body::Body;
+
+use crate::{error::Error, BoxError};
 
 pub type BoxBody = http_body::combinators::BoxBody<Bytes, Error>;
 

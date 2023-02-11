@@ -2,9 +2,39 @@
 // each router has three kind of results: empty , wrong and valid
 // empty and wrong are special cases, using a struct to wrap it up
 
-mod empty_router;
-mod route;
+pub mod empty_router;
 
+pub mod future;
+pub mod route;
+
+use std::{
+    borrow::Cow,
+    convert::Infallible,
+    fmt,
+    future::ready,
+    marker::PhantomData,
+    sync::Arc,
+    task::{Context, Poll},
+};
+
+use http::{Request, Response, StatusCode, Uri};
+use tower::{
+    util::{BoxService, ServiceExt},
+    ServiceBuilder,
+};
+use tower_http::map_response_body::MapResponseBodyLayer;
+use tower_layer::Layer;
+use tower_service::Service;
+
+use self::{
+    empty_router::{EmptyRouter, FromEmptyRouter},
+    future::EmptyRouterFuture,
+    route::{PathPattern, Route},
+};
+use crate::{
+    body::{box_body, BoxBody},
+    BoxError,
+};
 pub struct Router<S> {
     // Service
     svc: S,
@@ -12,7 +42,7 @@ pub struct Router<S> {
 
 // `EmptyRouter` is one kind of router
 // Make `Router` have the method of `EmptyRouter` via generic constraints
-impl<S> Router<EmptyRouter<E>> {
+impl<E> Router<EmptyRouter<E>> {
     // create a new router, default is not found
     pub fn new() -> Self {
         Self {
@@ -25,16 +55,20 @@ impl<S> Router<EmptyRouter<E>> {
 
 impl<S> Router<S> {
     // add one more constraint T
-    pub fn route<T>(self, description: &str, svc: T) -> Router<Route<T, S>> {
-        todo!()
+    pub fn route<T>(self, path: &str, svc: T) -> Router<Route<T, S>> {
+        self.map(|fallback| Route {
+            pattern: PathPattern::new(path),
+            svc,
+            fallback,
+        })
     }
 
-    //     fn map<F, S2>(self, f: F) -> Router<S2>
-    //     where
-    //         F: Fnonce(S) -> S2,
-    //     {
-    //         Router { svc: f(self.svc) }
-    //     }
+    fn map<F, S2>(self, f: F) -> Router<S2>
+    where
+        F: FnOnce(S) -> S2,
+    {
+        Router { svc: f(self.svc) }
+    }
 }
 
 impl<E> Default for Router<EmptyRouter<E>> {
@@ -56,7 +90,7 @@ where
     // Call the underlying service (svc)
     #[inline]
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.svc.call(cx)
+        self.svc.poll_ready(cx)
     }
     // Call the underlying service (svc)
     #[inline]
