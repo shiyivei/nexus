@@ -1,0 +1,73 @@
+use std::{
+    convert::Infallible,
+    fmt,
+    future::{ready, Future},
+    task::{Context, Poll},
+};
+
+use futures_util::future::{BoxFuture, Map};
+use http::Method;
+use pin_project_lite::pin_project;
+use tower::util::Oneshot;
+use tower_service::Service;
+
+use super::*;
+use crate::{
+    body::{box_body, Empty},
+    util::EitherProj,
+};
+pin_project! {
+     pub struct OnMethodFuture<F,B>
+     where
+          F: Service<Request<B>>
+     {
+          #[pin]
+          pub(super) inner: Either<
+               BoxFuture<'static,Response<BoxBody>>,
+               Oneshot<F,Request<B>>,
+          >,
+          pub(super) req_method: Method,
+     }
+
+
+}
+use std::pin::Pin;
+
+use futures_util::ready;
+
+impl<F, B> Future for OnMethodFuture<F, B>
+where
+    F: Service<Request<B>, Response = Response<BoxBody>>,
+{
+    type Output = Result<Response<BoxBody>, F::Error>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let this = self.project();
+        let response = match this.inner.project() {
+            EitherProj::A { inner } => ready!(inner.poll(cx)),
+            EitherProj::B { inner } => ready!(inner.poll(cx))?,
+        };
+
+        if this.req_method == &Method::HEAD {
+            let response = response.map(|_| box_body(Empty::new()));
+            Poll::Ready(Ok(response))
+        } else {
+            Poll::Ready(Ok(response))
+        }
+    }
+}
+impl<F, B> fmt::Debug for OnMethodFuture<F, B>
+where
+    F: Service<Request<B>>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("OnMethodFuture").finish()
+    }
+}
+
+opaque_future! {
+     pub type IntoServiceFuture = Map<
+     BoxFuture<'static,Response<BoxBody>>,
+     fn(Response<BoxBody>)->Result<Response<BoxBody>,Infallible>
+     >;
+}

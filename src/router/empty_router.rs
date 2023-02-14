@@ -19,7 +19,7 @@ impl<E> EmptyRouter<E> {
         }
     }
 
-    pub(crate) fn method_not_found() -> Self {
+    pub(crate) fn method_not_allowed() -> Self {
         Self {
             // 405
             status: StatusCode::METHOD_NOT_ALLOWED,

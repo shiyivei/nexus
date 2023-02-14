@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use http::method;
+use http::Method;
 
 bitflags! {
      pub struct MethodFilter: u16 {
@@ -17,18 +17,17 @@ bitflags! {
 
 impl MethodFilter {
     #[allow(clippy::match_like_matches_macro)]
-
     pub(crate) fn matches(self, method: &Method) -> bool {
         let method = match *method {
-            METHOD::CONNECT => self::CONNECT,
-            METHOD::DELETE => self::DELETE,
-            METHOD::GET => self::GET,
-            METHOD::HEAD => self::HEAD,
-            METHOD::OPTIONS => self::OPTIONS,
-            METHOD::PATCH => self::PATCH,
-            METHOD::POST => self::POST,
-            METHOD::PUT => self::PUT,
-            METHOD::TRACE => self::TRACE,
+            Method::CONNECT => Self::CONNECT,
+            Method::DELETE => Self::DELETE,
+            Method::GET => Self::GET,
+            Method::HEAD => Self::HEAD,
+            Method::OPTIONS => Self::OPTIONS,
+            Method::PATCH => Self::PATCH,
+            Method::POST => Self::POST,
+            Method::PUT => Self::PUT,
+            Method::TRACE => Self::TRACE,
             _ => return false,
         };
 

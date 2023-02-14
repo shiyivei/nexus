@@ -36,6 +36,8 @@ use crate::{
     body::{box_body, BoxBody},
     BoxError,
 };
+
+#[derive(Debug, Clone)]
 pub struct Router<S> {
     // Service
     svc: S,
@@ -69,6 +71,42 @@ impl<S> Router<S> {
         F: FnOnce(S) -> S2,
     {
         Router { svc: f(self.svc) }
+    }
+
+    pub fn into_make_service(self) -> IntoMakeService<S>
+    where
+        S: Clone,
+    {
+        IntoMakeService::new(self.svc)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IntoMakeService<S> {
+    service: S,
+}
+
+impl<S> IntoMakeService<S> {
+    fn new(svc: S) -> Self {
+        Self { service: svc }
+    }
+}
+impl<S, T> Service<T> for IntoMakeService<S>
+where
+    S: Clone,
+{
+    type Response = S;
+    type Error = Infallible;
+    type Future = future::MakeRouteServiceFuture<S>;
+
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, _target: T) -> Self::Future {
+        future::MakeRouteServiceFuture {
+            future: ready(Ok(self.service.clone())),
+        }
     }
 }
 

@@ -7,8 +7,11 @@ pub use tower_http::add_extension::{AddExtension, AddExtensionLayer};
 mod macros;
 mod body;
 mod error;
-mod handler;
-mod router;
+pub mod handler;
+mod response;
+pub mod router;
 mod util;
+
+pub use self::router::Router;
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;

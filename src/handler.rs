@@ -1,8 +1,22 @@
 use core::marker::PhantomData;
-use std::convert::Infallible;
+use std::{
+    convert::Infallible,
+    fmt,
+    future::{ready, Future},
+    task::{Context, Poll},
+};
 
-use super::*;
-use crate::body::BoxBody;
+use tower::{util::Oneshot, ServiceExt};
+
+use self::into_service::IntoService;
+use crate::{
+    body::{box_body, BoxBody},
+    util::Either,
+};
+
+mod future;
+mod into_service;
+use crate::response::IntoResponse;
 
 pub(crate) mod sealed {
 
@@ -13,7 +27,11 @@ pub(crate) mod sealed {
 
     impl HiddenTrait for Hidden {}
 }
+use async_trait::async_trait;
+use http::{Request, Response};
+use tower_service::Service;
 
+use crate::router::{empty_router::EmptyRouter, method_filter::MethodFilter};
 // 异步 trait 等价于返回 Future
 
 #[async_trait]
@@ -35,6 +53,26 @@ pub struct OnMethod<H, B, T, F> {
     pub(crate) _marker: PhantomData<fn() -> (B, T)>,
 }
 
+impl<H, B, T, F> Clone for OnMethod<H, B, T, F>
+where
+    H: Clone,
+    F: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            method: self.method,
+            handler: self.handler.clone(),
+            fallback: self.fallback.clone(),
+            _marker: PhantomData,
+        }
+    }
+}
+impl<H, B, T, F> Copy for OnMethod<H, B, T, F>
+where
+    H: Copy,
+    F: Copy,
+{
+}
 pub fn on<H, B, T>(method: MethodFilter, handler: H) -> OnMethod<H, B, T, EmptyRouter>
 where
     H: Handler<B, T>,
@@ -114,11 +152,10 @@ where
         let req_method = req.method().clone();
 
         let fut = if self.method.matches(req.method()) {
-            let fut = Handler.call(self.handler.clone(), req);
+            let fut = Handler::call(self.handler.clone(), req);
             Either::A { inner: fut }
         } else {
-            let fut = self.fallback.clone();
-            oneshot(req);
+            let fut = self.fallback.clone().oneshot(req);
             Either::B { inner: fut }
         };
 
@@ -126,5 +163,19 @@ where
             inner: fut,
             req_method,
         }
+    }
+}
+
+#[async_trait]
+impl<F, Fut, Res, B> Handler<B, ()> for F
+where
+    F: FnOnce() -> Fut + Clone + Send + Sync + 'static,
+    Fut: Future<Output = Res> + Send,
+    Res: IntoResponse,
+    B: Send + 'static,
+{
+    type Sealed = sealed::Hidden;
+    async fn call(self, _req: Request<B>) -> Response<BoxBody> {
+        self().await.into_response().map(box_body)
     }
 }

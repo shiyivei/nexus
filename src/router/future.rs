@@ -9,6 +9,11 @@ opaque_future! {
      pub type EmptyRouterFuture<E> = std::future::Ready<Result<Response<BoxBody>,E>>;
 }
 
+opaque_future! {
+    pub type MakeRouteServiceFuture<S> =
+     std::future::Ready<Result<S,Infallible>>;
+}
+
 pin_project! {
      #[derive(Debug)]
      pub struct RouteFuture<S,F,B>
