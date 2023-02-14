@@ -5,6 +5,7 @@
 pub mod empty_router;
 
 pub mod future;
+pub mod method_filter;
 pub mod route;
 
 use std::{
