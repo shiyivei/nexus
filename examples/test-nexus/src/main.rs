@@ -12,7 +12,7 @@ async fn main() {
     // build application with a route
     let app = Router::new().route("/", get(handler));
 
-    let addr = SocketAddr::from(([127.0.0 .1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("Listening on {}", addr);
     // run application
     nexus::Server::bind(&addr)

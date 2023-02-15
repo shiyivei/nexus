@@ -62,7 +62,7 @@ where
         use futures_util::future::FutureExt;
 
         let handler = self.handler.clone();
-        let future = Handler::call(handler, req).map(Ok::<_, Infallible>);
+        let future = Handler::call(handler, req).map(Ok::<_, Infallible> as _);
 
         super::future::IntoServiceFuture { future }
     }

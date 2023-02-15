@@ -3,7 +3,9 @@ use regex::Regex;
 
 use self::future::RouteFuture;
 use super::*;
+use crate::util::ByteStr;
 
+#[derive(Debug, Clone)]
 pub struct Route<S, F> {
     pub(crate) pattern: PathPattern, // parse url and match route
     pub(crate) svc: S,               // service
@@ -26,7 +28,34 @@ where
 
     // call and return, choose the handle
     fn call(&mut self, mut req: Request<B>) -> Self::Future {
-        todo!()
+        if let Some(captures) = self.pattern.full_match(&req) {
+            insert_url_params(&mut req, captures);
+            let fut = self.svc.clone().oneshot(req);
+
+            RouteFuture::a(fut, self.fallback.clone())
+        } else {
+            let fut = self.fallback.clone().oneshot(req);
+            RouteFuture::b(fut)
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct UrlParams(pub(crate) Vec<(ByteStr, ByteStr)>);
+
+fn insert_url_params<B>(req: &mut Request<B>, params: Vec<(String, String)>) {
+    let params = params
+        .into_iter()
+        .map(|(k, v)| (ByteStr::new(k), ByteStr::new(v)));
+
+    if let Some(current) = req.extensions_mut().get_mut::<Option<UrlParams>>() {
+        let mut current = current.take().unwrap();
+
+        current.0.extend(params);
+        req.extensions_mut().insert(Some(current));
+    } else {
+        req.extensions_mut()
+            .insert(Some(UrlParams(params.collect())));
     }
 }
 

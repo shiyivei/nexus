@@ -1,0 +1,9 @@
+[package]
+name = "test-nexus"
+version = "0.1.0"
+edition = "2021"
+authors = ["shiyivei"]
+
+[dependencies]
+nexus = {path = "../.."}
+tokio = {version = "1.0", features = ["full"]}
