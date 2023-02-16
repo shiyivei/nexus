@@ -7,6 +7,7 @@ pub use tower_http::add_extension::{AddExtension, AddExtensionLayer};
 mod macros;
 mod body;
 mod error;
+pub mod extract;
 pub mod handler;
 mod response;
 pub mod router;

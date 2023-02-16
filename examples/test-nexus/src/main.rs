@@ -3,12 +3,14 @@ use std::net::SocketAddr;
 
 use color_eyre::Report;
 use nexus::{handler::get, Router};
+use serde::Deserialize;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-
 async fn handler() -> &'static str {
     "<h1> Hello, World! </h>"
 }
+
+use nexus::extract::builtin::query::Query;
 
 #[tokio::main]
 async fn main() -> Result<(), Report> {
@@ -42,4 +44,18 @@ fn setup() -> Result<(), Report> {
         .init();
 
     Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+struct Pagination {
+    page: usize,
+    per_page: usize,
+}
+
+async fn page_handler(pagination: Query<Pagination>) -> &'static str {
+    let pagination = pagination.0;
+
+    info!(?pagination, "Got a connection!");
+
+    "<h1> Hello, World!<h1>"
 }
