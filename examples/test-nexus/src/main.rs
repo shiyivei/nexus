@@ -2,21 +2,33 @@
 use std::net::SocketAddr;
 
 use color_eyre::Report;
-use nexus::{handler::get, Router};
+use nexus::{
+    handler::get,
+    http::{header::USER_AGENT, HeaderValue},
+    Router,
+};
 use serde::Deserialize;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
+
 async fn handler() -> &'static str {
     "<h1> Hello, World! </h>"
 }
-
+use hyper::Body;
 use nexus::extract::builtin::query::Query;
+use tower_http::set_header::SetRequestHeaderLayer;
 
 #[tokio::main]
 async fn main() -> Result<(), Report> {
     setup()?;
     // build application with a route
-    let app = Router::new().route("/", get(handler));
+    let app = Router::new()
+        .route("/", get(handler))
+        .route("/page", get(page_handler))
+        .layer(SetRequestHeaderLayer::<_, Body>::overriding(
+            USER_AGENT,
+            HeaderValue::from_static("nexus-http demo"),
+        ));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     info!(%addr,"Listening on: {}",addr);

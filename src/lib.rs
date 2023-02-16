@@ -5,12 +5,13 @@ pub use tower_http::add_extension::{AddExtension, AddExtensionLayer};
 
 #[macro_use]
 mod macros;
-mod body;
+pub mod body;
 mod error;
 pub mod extract;
 pub mod handler;
 mod response;
 pub mod router;
+mod service;
 mod util;
 
 pub use self::router::Router;

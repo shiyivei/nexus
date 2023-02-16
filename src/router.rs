@@ -34,6 +34,7 @@ use self::{
 };
 use crate::{
     body::{box_body, BoxBody},
+    service::HandleError,
     BoxError,
 };
 
@@ -79,8 +80,70 @@ impl<S> Router<S> {
     {
         IntoMakeService::new(self.svc)
     }
+
+    pub fn layer<L>(self, layer: L) -> Router<Layered<L::Service>>
+    where
+        L: Layer<S>,
+    {
+        self.map(|svc| Layered::new(layer.layer(svc)))
+    }
+
+    pub fn handle_error<ReqBody, F>(self, f: F) -> Router<HandleError<S, F, ReqBody>> {
+        self.map(|svc| HandleError::new(svc, f))
+    }
+
+    pub fn check_infallible(self) -> Router<CheckInfallible<S>> {
+        self.map(CheckInfallible)
+    }
 }
 
+pub struct Layered<S> {
+    inner: S,
+}
+impl<S> Layered<S> {
+    fn new(inner: S) -> Self {
+        Self { inner }
+    }
+}
+
+impl<S> Clone for Layered<S>
+where
+    S: Clone,
+{
+    fn clone(&self) -> Self {
+        Self::new(self.inner.clone())
+    }
+}
+
+impl<S> fmt::Debug for Layered<S>
+where
+    S: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Layered")
+            .field("inner", &self.inner)
+            .finish()
+    }
+}
+
+impl<S, R> Service<R> for Layered<S>
+where
+    S: Service<R>,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = S::Future;
+
+    #[inline]
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    #[inline]
+    fn call(&mut self, req: R) -> Self::Future {
+        self.inner.call(req)
+    }
+}
 #[derive(Debug, Clone)]
 pub struct IntoMakeService<S> {
     service: S,
@@ -135,5 +198,26 @@ where
     #[inline]
     fn call(&mut self, req: R) -> Self::Future {
         self.svc.call(req)
+    }
+}
+
+pub struct CheckInfallible<S>(S);
+
+impl<R, S> Service<R> for CheckInfallible<S>
+where
+    S: Service<R, Error = Infallible>,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = S::Future;
+
+    #[inline]
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.0.poll_ready(cx)
+    }
+
+    #[inline]
+    fn call(&mut self, req: R) -> Self::Future {
+        self.0.call(req)
     }
 }
