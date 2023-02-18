@@ -13,6 +13,7 @@ pub trait IntoResponse {
     type Body: http_body::Body<Data = Bytes, Error = Self::BodyError> + Send + Sync + 'static;
     type BodyError: Into<BoxError>;
 
+    // create a response
     fn into_response(self) -> Response<Self::Body>;
 }
 
@@ -69,7 +70,7 @@ impl IntoResponse for &'static str {
 
     #[inline]
     fn into_response(self) -> Response<Self::Body> {
-        Cow::<'static, str>::Borrowed(self).into_response()
+        Cow::Borrowed(self).into_response()
     }
 }
 

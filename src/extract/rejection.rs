@@ -1,7 +1,7 @@
-use std::{borrow::Cow, convert::Infallible, fmt};
+use std::{convert::Infallible, fmt};
 
 use bytes::Bytes;
-use http_body::{Empty, Full};
+use http_body::Full;
 
 use super::IntoResponse;
 use crate::{
@@ -189,6 +189,13 @@ composite_rejection! {
 }
 
 composite_rejection! {
+    pub enum ExtensionRejection {
+         MissingExtension,
+         ExtensionAlreadyExtracted
+    }
+}
+
+composite_rejection! {
      pub enum  PathParamsRejection {
           InvalidPathParam,
           MissingRouteParams,
@@ -282,4 +289,4 @@ where
 
 #[cfg(feature = "headers")]
 #[cfg_attr(docsrs, doc(cfg(feature = "headers")))]
-pub use super::builtin::typed_header::TypeHeaderRejection;
+pub use super::builtin::typed_header::TypedHeaderRejection;

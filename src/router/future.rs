@@ -64,9 +64,7 @@ pin_project! {
                #[pin]
                b:Oneshot<F, Request<B>>
           }
-
      }
-
 }
 
 impl<S, F, B> Future for RouteFuture<S, F, B>
@@ -105,3 +103,5 @@ where
         }
     }
 }
+
+

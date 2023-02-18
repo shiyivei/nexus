@@ -9,9 +9,10 @@ pub mod body;
 mod error;
 pub mod extract;
 pub mod handler;
-mod response;
+pub mod response;
 pub mod router;
 mod service;
+
 mod util;
 
 pub use self::router::Router;

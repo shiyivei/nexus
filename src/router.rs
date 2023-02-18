@@ -13,18 +13,12 @@ use std::{
     convert::Infallible,
     fmt,
     future::ready,
-    marker::PhantomData,
     sync::Arc,
     task::{Context, Poll},
 };
 
-use http::{Request, Response, StatusCode, Uri};
-use tower::{
-    util::{BoxService, ServiceExt},
-    ServiceBuilder,
-};
-use tower_http::map_response_body::MapResponseBodyLayer;
-use tower_layer::Layer;
+use http::{Request, Response, StatusCode};
+use tower::util::ServiceExt;
 use tower_service::Service;
 
 use self::{
@@ -32,11 +26,7 @@ use self::{
     future::EmptyRouterFuture,
     route::{PathPattern, Route},
 };
-use crate::{
-    body::{box_body, BoxBody},
-    service::HandleError,
-    BoxError,
-};
+use crate::{body::BoxBody, service::HandleError};
 
 #[derive(Debug, Clone)]
 pub struct Router<S> {
@@ -83,7 +73,7 @@ impl<S> Router<S> {
 
     pub fn layer<L>(self, layer: L) -> Router<Layered<L::Service>>
     where
-        L: Layer<S>,
+        L: tower_layer::Layer<S>,
     {
         self.map(|svc| Layered::new(layer.layer(svc)))
     }
