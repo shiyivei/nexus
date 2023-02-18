@@ -2,41 +2,42 @@
 use std::net::SocketAddr;
 
 use color_eyre::Report;
+use http::header::USER_AGENT;
+use hyper::Body;
 use nexus::{
-    handler::get,
-    http::{header::USER_AGENT, HeaderValue},
+    self,
+    handler::{get, post},
     Router,
 };
-use serde::Deserialize;
+use tower_http::set_header::SetRequestHeaderLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-async fn handler() -> &'static str {
-    "<h1> Hello, World! </h>"
-}
-use hyper::Body;
-use nexus::extract::builtin::query::Query;
-use tower_http::set_header::SetRequestHeaderLayer;
+mod handlers;
+use headers::HeaderValue;
+
+use crate::handlers::{handler, page_handler, type_handler};
 
 #[tokio::main]
 async fn main() -> Result<(), Report> {
     setup()?;
+    info!("nexus init...");
     // build application with a route
     let app = Router::new()
-        .route("/", get(handler))
-        .route("/page", get(page_handler))
-        .layer(SetRequestHeaderLayer::<_, Body>::overriding(
-            USER_AGENT,
-            HeaderValue::from_static("nexus-http demo"),
-        ));
+        // .route("/", post(handler))
+        .route("/", get(type_handler))
+        .route("/page", get(page_handler));
+    // .layer(SetRequestHeaderLayer::<_, Body>::overriding(
+    //     USER_AGENT,
+    //     HeaderValue::from_static("nexus-http demo"),
+    // ));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     info!(%addr,"Listening on: {}",addr);
 
     nexus::Server::bind(&addr)
         .serve(app.into_make_service())
-        .await
-        .unwrap();
+        .await?;
 
     Ok(())
 }
@@ -56,18 +57,4 @@ fn setup() -> Result<(), Report> {
         .init();
 
     Ok(())
-}
-
-#[derive(Debug, Deserialize)]
-struct Pagination {
-    page: usize,
-    per_page: usize,
-}
-
-async fn page_handler(pagination: Query<Pagination>) -> &'static str {
-    let pagination = pagination.0;
-
-    info!(?pagination, "Got a connection!");
-
-    "<h1> Hello, World!<h1>"
 }
