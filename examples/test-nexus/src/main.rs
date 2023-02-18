@@ -26,7 +26,11 @@ async fn main() -> Result<(), Report> {
     let app = Router::new()
         // .route("/", post(handler))
         .route("/", get(type_handler))
-        .route("/page", get(page_handler));
+        .route("/page", get(page_handler))
+        .layer(SetRequestHeaderLayer::<_, Body>::overriding(
+            USER_AGENT,
+            HeaderValue::from_static("nexus-http demo"),
+        ));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     info!(%addr,"Listening on: {}",addr);
